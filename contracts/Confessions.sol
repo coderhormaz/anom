@@ -10,6 +10,14 @@ contract Confessions {
         mapping(address => bool) voters;
     }
 
+    /// @dev A memory-safe view of a Confession (no mapping).
+    struct ConfessionView {
+        string text;
+        address wallet;
+        uint256 timestamp;
+        int256 votes;
+    }
+
     Confession[] public confessions;
 
     event ConfessionPosted(uint256 id, string text, address indexed wallet, uint256 timestamp);
@@ -50,7 +58,37 @@ contract Confessions {
         emit Voted(id, msg.sender, confession.votes);
     }
 
-    function getConfessions() external view returns (Confession[] memory) {
-        return confessions;
+    function getConfessionCount() external view returns (uint256) {
+        return confessions.length;
+    }
+
+    function getConfession(uint256 id) external view returns (ConfessionView memory) {
+        require(id < confessions.length, "Invalid confession ID");
+        Confession storage c = confessions[id];
+        return ConfessionView({
+            text: c.text,
+            wallet: c.wallet,
+            timestamp: c.timestamp,
+            votes: c.votes
+        });
+    }
+
+    function getConfessions() external view returns (ConfessionView[] memory) {
+        ConfessionView[] memory views = new ConfessionView[](confessions.length);
+        for (uint256 i = 0; i < confessions.length; i++) {
+            Confession storage c = confessions[i];
+            views[i] = ConfessionView({
+                text: c.text,
+                wallet: c.wallet,
+                timestamp: c.timestamp,
+                votes: c.votes
+            });
+        }
+        return views;
+    }
+
+    function hasVoted(uint256 id, address voter) external view returns (bool) {
+        require(id < confessions.length, "Invalid confession ID");
+        return confessions[id].voters[voter];
     }
 }
